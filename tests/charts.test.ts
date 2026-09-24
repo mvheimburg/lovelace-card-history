@@ -87,7 +87,7 @@ it("puts a chosen unit left, smooths without fill on request, and draws on/off l
   expect(
     svg.querySelector('.line[data-entity="sensor.out"]')!.getAttribute("d"),
   ).toContain("C");
-  const lane = svg.querySelector('.lane[data-entity="binary_sensor.door"]')!;
+  const lane = svg.querySelector('.history-lane[data-entity="binary_sensor.door"]')!;
   expect(lane.querySelectorAll(".lane-track")).toHaveLength(5);
   expect(lane.querySelectorAll(".lane-on")).toHaveLength(2);
   expect(

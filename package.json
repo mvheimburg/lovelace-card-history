@@ -1,6 +1,6 @@
 {
   "name": "lovelace-card-history",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Shared history view for our Lovelace cards: recorder loading, line chart, state timeline and dialog, in English and Bokm\u00e5l",
   "type": "module",
   "license": "MIT",

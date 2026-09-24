@@ -210,7 +210,7 @@ export function lineChart(
       .filter((p) => p.value !== undefined);
     const rect = (p: { from: number; to: number }, cls: string) =>
       svg`<rect class=${cls} x=${x(p.from).toFixed(1)} y=${top} width=${Math.max(1, x(p.to) - x(p.from)).toFixed(1)} height=${LANE - 4} rx="2"></rect>`;
-    return svg`<g class=${`lane series-${s.color}`} data-entity=${s.entityId}>${spells.map((p) => rect(p, "lane-track"))}${spells.filter((p) => p.value === 1).map((p) => rect(p, "lane-on"))}</g>`;
+    return svg`<g class=${`history-lane series-${s.color}`} data-entity=${s.entityId}>${spells.map((p) => rect(p, "lane-track"))}${spells.filter((p) => p.value === 1).map((p) => rect(p, "lane-on"))}</g>`;
   };
   const grid = l ?? r;
   return svg`<svg class="history-chart" viewBox="0 0 ${W} ${H}" role="img" aria-label=${text.label}>

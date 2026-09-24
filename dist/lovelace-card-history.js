@@ -602,7 +602,7 @@ function lineChart(all, start, end, hover, text, options = {}) {
         }))
             .filter((p) => p.value !== undefined);
         const rect = (p, cls) => w `<rect class=${cls} x=${x(p.from).toFixed(1)} y=${top} width=${Math.max(1, x(p.to) - x(p.from)).toFixed(1)} height=${LANE - 4} rx="2"></rect>`;
-        return w `<g class=${`lane series-${s.color}`} data-entity=${s.entityId}>${spells.map((p) => rect(p, "lane-track"))}${spells.filter((p) => p.value === 1).map((p) => rect(p, "lane-on"))}</g>`;
+        return w `<g class=${`history-lane series-${s.color}`} data-entity=${s.entityId}>${spells.map((p) => rect(p, "lane-track"))}${spells.filter((p) => p.value === 1).map((p) => rect(p, "lane-on"))}</g>`;
     };
     const grid = l ?? r;
     return w `<svg class="history-chart" viewBox="0 0 ${W} ${H}" role="img" aria-label=${text.label}>
@@ -855,10 +855,10 @@ const historyStyles = i$3 `
     height: 0;
     border-top: 3px solid var(--series);
   }
-  .history-item.step .swatch {
+  .history-item.kind-step .swatch {
     border-top-style: dashed;
   }
-  .history-item.lane .swatch {
+  .history-item.kind-lane .swatch {
     height: 10px;
     border-top: 0;
     border-radius: 2px;
@@ -1074,7 +1074,7 @@ function historyView(ctl, o) {
     </p>
     <div class="history-legend">
       ${legend.map((entry) => b `<button
-            class=${`history-item series-${entry.color}${entry.kind ? ` ${entry.kind}` : ""}`}
+            class=${`history-item series-${entry.color}${entry.kind ? ` kind-${entry.kind}` : ""}`}
             type="button"
             data-series=${entry.entityId}
             title=${entry.title ?? A}

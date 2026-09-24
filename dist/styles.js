@@ -225,10 +225,10 @@ export const historyStyles = css `
     height: 0;
     border-top: 3px solid var(--series);
   }
-  .history-item.step .swatch {
+  .history-item.kind-step .swatch {
     border-top-style: dashed;
   }
-  .history-item.lane .swatch {
+  .history-item.kind-lane .swatch {
     height: 10px;
     border-top: 0;
     border-radius: 2px;

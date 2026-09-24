@@ -60,7 +60,7 @@ export function historyView(ctl, o) {
     </p>
     <div class="history-legend">
       ${legend.map((entry) => html `<button
-            class=${`history-item series-${entry.color}${entry.kind ? ` ${entry.kind}` : ""}`}
+            class=${`history-item series-${entry.color}${entry.kind ? ` kind-${entry.kind}` : ""}`}
             type="button"
             data-series=${entry.entityId}
             title=${entry.title ?? nothing}

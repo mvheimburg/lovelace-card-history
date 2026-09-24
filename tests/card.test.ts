@@ -110,7 +110,7 @@ it("draws measurements on two scales, on/off entities as lanes and other states 
   ).toHaveLength(2);
   expect(svg.querySelectorAll(".area").length).toBeGreaterThan(0);
   expect(
-    svg.querySelector('.lane[data-entity="binary_sensor.window"]'),
+    svg.querySelector('.history-lane[data-entity="binary_sensor.window"]'),
   ).not.toBeNull();
   expect(root.querySelector('svg.timeline [data-lane="text"]')).not.toBeNull();
   expect(legend(root)).toEqual([
