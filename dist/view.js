@@ -55,21 +55,37 @@ export function historyView(ctl, o) {
                 ? html `<p class="history-note">${o.strings.empty}</p>`
                 : o.chart(data, range, hover, Math.max(280, ctl.width))}
     </div>
+    ${data !== undefined && range && !error && !o.isEmpty(data)
+        ? html `<label class="history-inspector"
+            >${o.strings.inspect}
+            <input
+              type="range"
+              min=${range[0]}
+              max=${range[1]}
+              step=${(range[1] - range[0]) / 200}
+              .value=${String(hover ?? range[1])}
+              aria-valuetext=${o.format.moment(hover ?? range[1])}
+              @input=${(e) => ctl.setHover(Number(e.target.value))}
+            />
+          </label>`
+        : nothing}
     <p class="history-when" aria-live="polite">
       ${hover === undefined ? o.strings.now : long ? o.format.moment(hover) : o.format.time(hover)}
     </p>
     <div class="history-legend">
-      ${legend.map((entry) => html `<button
-            class=${`history-item series-${entry.color}${entry.kind ? ` kind-${entry.kind}` : ""}`}
-            type="button"
-            data-series=${entry.entityId}
-            title=${entry.title ?? nothing}
-            @click=${(e) => o.select(entry.entityId, e)}
-          >
-            <span class="swatch" aria-hidden="true"></span>
-            <span class="label">${entry.name}</span>
-            <strong>${entry.value}</strong>
-          </button>`)}
+      ${data !== undefined && o.renderLegend
+        ? o.renderLegend(data, hover)
+        : legend.map((entry) => html `<button
+                  class=${`history-item series-${entry.color}${entry.kind ? ` kind-${entry.kind}` : ""}`}
+                  type="button"
+                  data-series=${entry.entityId}
+                  title=${entry.title ?? nothing}
+                  @click=${(e) => o.select(entry.entityId, e)}
+                >
+                  <span class="swatch" aria-hidden="true"></span>
+                  <span class="label">${entry.name}</span>
+                  <strong>${entry.value}</strong>
+                </button>`)}
     </div>`;
 }
 /** Close a dialog when its backdrop, outside the box, is clicked. */
@@ -108,6 +124,7 @@ export function historyDialog(ctl, o) {
       <h2 class="history-title" id="history-title">
         ${o.strings.history}${o.subtitle ? html ` <span class="history-subtitle">${o.subtitle}</span>` : nothing}
       </h2>
+      ${o.headerActions ?? nothing}
       <button
         class="history-close"
         type="button"
@@ -129,6 +146,7 @@ export function historyDialog(ctl, o) {
             o.select(id, e);
         },
     })}
+    ${o.footer ?? nothing}
   </dialog>`;
 }
 /**

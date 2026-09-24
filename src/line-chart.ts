@@ -2,14 +2,14 @@ import { nothing, svg } from "lit";
 import { isTemperature, type Point, type Series } from "./data";
 import { ticks } from "./ticks";
 
-const LEFT = 44,
-  TOP = 24,
-  PLOT_BOTTOM = 196,
-  /** Room right of the plot for the second scale. */
-  GUTTER = 44,
-  /** One lane below the plot, and the gap above the first. */
-  LANE = 14,
-  LANE_GAP = 6;
+const LEFT = 44;
+const TOP = 24;
+const PLOT_BOTTOM = 196;
+/** Room right of the plot for each additional scale. */
+const GUTTER = 44;
+/** One lane below the plot, and the gap above the first. */
+const LANE = 14;
+const LANE_GAP = 6;
 
 /** Locale formatting the chart needs from its card. */
 export interface ChartText {
@@ -26,6 +26,10 @@ export interface ChartOptions {
    * else the first series' unit; a series in another unit gets the right scale.
    */
   leftUnit?: string;
+  /** Opt in to three independent units (two remains the default). */
+  maxUnits?: 2 | 3;
+  /** Fixed bounds by unit, e.g. { "%": [0, 100] } for valve opening. */
+  domains?: Record<string, readonly [number, number]>;
   /** Translucent gradient under each line (default on). */
   fill?: boolean;
   /** Smooth lines through the readings without overshooting them (default off). */
@@ -44,6 +48,25 @@ export function units(
     series[0]?.unit ??
     "";
   return [left, series.find((s) => s.unit !== left)?.unit];
+}
+
+/** Units rendered, in axis order. Pass the length to lineChartTimeAt. */
+export function chartUnits(
+  all: Series[],
+  leftUnit?: string,
+  maxUnits = 2,
+): string[] {
+  const [left] = units(all, leftUnit);
+  return [
+    ...new Set([
+      left,
+      ...all.filter((s) => s.kind !== "lane").map((s) => s.unit),
+    ]),
+  ].slice(0, maxUnits);
+}
+
+function rightMargin(count: number) {
+  return count <= 1 ? 12 : GUTTER * (count - 1);
 }
 
 /**
@@ -66,7 +89,24 @@ function runs(points: Point[], hold: boolean): Array<Array<[number, number]>> {
   return out;
 }
 
-function scale(series: Series[], pad: number) {
+function scale(
+  series: Series[],
+  pad: number,
+  domain?: readonly [number, number],
+) {
+  if (
+    domain &&
+    Number.isFinite(domain[0]) &&
+    Number.isFinite(domain[1]) &&
+    domain[1] > domain[0]
+  ) {
+    const [min, max] = domain;
+    return {
+      min,
+      max,
+      marks: [min, ...ticks(min, max).filter((v) => v > min && v < max), max],
+    };
+  }
   const values = series.flatMap((s) =>
     s.points.flatMap(([, v]) => (v === undefined ? [] : [v])),
   );
@@ -127,11 +167,8 @@ export function lineChart(
   const BOTTOM = series.length ? PLOT_BOTTOM : TOP - LANE_GAP;
   const END = BOTTOM + (lanes.length ? LANE_GAP + lanes.length * LANE : 0);
   const H = END + 34;
-  const [leftUnit, rightUnit] = units(series, options.leftUnit);
-  const RIGHT = W - (rightUnit === undefined ? 12 : GUTTER);
-  const left = series.filter((s) => s.unit === leftUnit);
-  const right =
-    rightUnit === undefined ? [] : series.filter((s) => s.unit === rightUnit);
+  const axisUnits = chartUnits(series, options.leftUnit, options.maxUnits);
+  const RIGHT = W - rightMargin(axisUnits.length);
   const pad = (list: Series[], unit: string) =>
     isTemperature(unit) ||
     list.some((s) =>
@@ -139,8 +176,14 @@ export function lineChart(
     )
       ? 1
       : 0.1;
-  const l = scale(left, pad(left, leftUnit)),
-    r = scale(right, pad(right, rightUnit ?? ""));
+  const axes = axisUnits.map((unit) => {
+    const list = series.filter((s) => s.unit === unit);
+    return {
+      unit,
+      list,
+      scale: scale(list, pad(list, unit), options.domains?.[unit]),
+    };
+  });
   const x = (t: number) =>
     LEFT +
     ((Math.min(Math.max(t, start), end) - start) / (end - start)) *
@@ -162,26 +205,36 @@ export function lineChart(
     )
       xTicks.push(t);
   }
+  // Leave room for localized clock labels, including a 12-hour AM/PM suffix.
+  let previousLabelRight = -Infinity;
+  const labeledTicks = xTicks.filter((t) => {
+    const half = text.time(t, every >= 24).length * 3.5;
+    if (x(t) - half < previousLabelRight + 10) return false;
+    previousLabelRight = x(t) + half;
+    return true;
+  });
   const paths = (s: Series, sc: { min: number; max: number }) =>
     runs(s.points, s.kind === "step").map((run) => {
       const pts = run.map(([t, v]): [number, number] => [x(t), y(v, sc)]);
       const line =
-        s.kind === "step"
-          ? pts
-              .map(([px, py], i) =>
-                i
-                  ? `H${px.toFixed(1)} V${py.toFixed(1)}`
-                  : `M${px.toFixed(1)},${py.toFixed(1)}`,
-              )
-              .join(" ")
-          : options.smooth
-            ? smoothPath(pts)
-            : pts
-                .map(
-                  ([px, py], i) =>
-                    `${i ? "L" : "M"}${px.toFixed(1)},${py.toFixed(1)}`,
+        pts.length === 1
+          ? `M${pts[0][0].toFixed(1)},${pts[0][1].toFixed(1)} h0.01`
+          : s.kind === "step"
+            ? pts
+                .map(([px, py], i) =>
+                  i
+                    ? `H${px.toFixed(1)} V${py.toFixed(1)}`
+                    : `M${px.toFixed(1)},${py.toFixed(1)}`,
                 )
-                .join(" ");
+                .join(" ")
+            : options.smooth
+              ? smoothPath(pts)
+              : pts
+                  .map(
+                    ([px, py], i) =>
+                      `${i ? "L" : "M"}${px.toFixed(1)},${py.toFixed(1)}`,
+                  )
+                  .join(" ");
       const area =
         fill && s.kind !== "step" && pts.length > 1
           ? `${line} L${pts[pts.length - 1][0].toFixed(1)},${BOTTOM} L${pts[0][0].toFixed(1)},${BOTTOM} Z`
@@ -212,18 +265,20 @@ export function lineChart(
       svg`<rect class=${cls} x=${x(p.from).toFixed(1)} y=${top} width=${Math.max(1, x(p.to) - x(p.from)).toFixed(1)} height=${LANE - 4} rx="2"></rect>`;
     return svg`<g class=${`history-lane series-${s.color}`} data-entity=${s.entityId}>${spells.map((p) => rect(p, "lane-track"))}${spells.filter((p) => p.value === 1).map((p) => rect(p, "lane-on"))}</g>`;
   };
-  const grid = l ?? r;
+  const grid = axes.find((a) => a.scale)?.scale;
   return svg`<svg class="history-chart" viewBox="0 0 ${W} ${H}" role="img" aria-label=${text.label}>
     <title>${text.label}</title>
     <defs>${[0, 1, 2, 3, 4].map((c) => svg`<linearGradient id=${`history-fill-${c}`} class=${`series-${c}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="fill-top"></stop><stop offset="1" class="fill-bottom"></stop></linearGradient>`)}</defs>
     ${grid?.marks.map((v) => svg`<line class="grid" x1=${LEFT} x2=${RIGHT} y1=${y(v, grid)} y2=${y(v, grid)}></line>`)}
-    ${l ? l.marks.map((v) => svg`<text class="axis" x=${LEFT - 6} y=${y(v, l) + 4} text-anchor="end">${text.number(v, digits(l))}</text>`) : nothing}
-    ${l && leftUnit ? svg`<text class="axis unit" x="4" y="12">${leftUnit}</text>` : nothing}
-    ${r ? r.marks.map((v) => svg`<text class="axis" x=${RIGHT + 6} y=${y(v, r) + 4}>${text.number(v, digits(r))}</text>`) : nothing}
-    ${r && rightUnit ? svg`<text class="axis unit" x=${W - 4} y="12" text-anchor="end">${rightUnit}</text>` : nothing}
-    ${xTicks.map((t) => svg`<line class="grid" x1=${x(t)} x2=${x(t)} y1=${TOP} y2=${END}></line><text class="axis" x=${x(t)} y=${END + 18} text-anchor="middle">${text.time(t, every >= 24)}</text>`)}
-    ${l ? left.map((s) => draw(s, l)) : nothing}
-    ${r ? right.map((s) => draw(s, r)) : nothing}
+    ${axes.map(({ unit, scale: sc }, i) =>
+      sc
+        ? svg`
+      ${sc.marks.map((v) => svg`<text class="axis" x=${i === 0 ? LEFT - 6 : RIGHT + 6 + (i - 1) * GUTTER} y=${y(v, sc) + 4} text-anchor=${i === 0 ? "end" : "start"}>${text.number(v, digits(sc))}</text>`)}
+      ${unit ? svg`<text class="axis unit" x=${i === 0 ? 4 : RIGHT + (i - 1) * GUTTER + 4} y="12">${unit}</text>` : nothing}`
+        : nothing,
+    )}
+    ${labeledTicks.map((t) => svg`<line class="grid" x1=${x(t)} x2=${x(t)} y1=${TOP} y2=${END}></line><text class="axis" x=${x(t)} y=${END + 18} text-anchor="middle">${text.time(t, every >= 24)}</text>`)}
+    ${axes.map(({ list, scale: sc }) => (sc ? list.map((s) => draw(s, sc)) : nothing))}
     ${lanes.map(lane)}
     ${hover === undefined ? nothing : svg`<line class="cursor" x1=${x(hover)} x2=${x(hover)} y1=${TOP} y2=${END}></line>`}
   </svg>`;
@@ -235,11 +290,12 @@ export function lineChartTimeAt(
   element: SVGSVGElement,
   start: number,
   end: number,
-  twoScales: boolean,
+  twoScales: boolean | number,
 ): number {
   const box = element.getBoundingClientRect();
   const W = element.viewBox?.baseVal?.width || box.width;
   const px = ((event.clientX - box.left) / box.width) * W;
-  const ratio = (px - LEFT) / (W - (twoScales ? GUTTER : 12) - LEFT);
+  const count = typeof twoScales === "number" ? twoScales : twoScales ? 2 : 1;
+  const ratio = (px - LEFT) / (W - rightMargin(count) - LEFT);
   return start + Math.min(1, Math.max(0, ratio)) * (end - start);
 }

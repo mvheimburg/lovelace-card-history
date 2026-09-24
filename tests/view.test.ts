@@ -1,4 +1,5 @@
-import { LitElement, html } from "lit";
+import { userEvent } from "vitest/browser";
+import { LitElement, html, css } from "lit";
 import { afterEach, expect, it, vi } from "vitest";
 import { HistoryController } from "../src/controller";
 import type { Range } from "../src/data";
@@ -18,17 +19,39 @@ afterEach(() => document.body.replaceChildren());
 
 type Data = { value: number };
 class Host extends LitElement {
-  static styles = historyStyles;
+  static styles = [
+    css`
+      label {
+        display: flex;
+        flex-direction: column;
+      }
+      input {
+        width: 100%;
+        padding: 9px 12px;
+        border: 1px solid red;
+      }
+    `,
+    historyStyles,
+  ];
   language = "en";
   load = vi.fn(async (range: Range) => ({ value: range }) as Data);
   ctl = new HistoryController<Data>(this, (range) => this.load(range));
   picked: string[] = [];
+  controls = 0;
   render() {
     const hass = { language: this.language };
     return html`<button id="open">Open</button>${historyDialog(this.ctl, {
         strings: historyStrings(hass),
         format: historyFormat(hass),
         subtitle: "Kitchen",
+        headerActions: html`<button
+          class="history-action"
+          aria-label="Controls"
+          @click=${() => this.controls++}
+        >
+          ⚙
+        </button>`,
+        footer: html`<p data-footer>Daily values</p>`,
         isEmpty: (d) => d.value === 0,
         chart: (d) =>
           html`<svg class="history-chart" viewBox="0 0 600 200">
@@ -171,4 +194,40 @@ it("offers Home Assistant's own history instead, when a card is set to", () => {
   expect(moves[0]).toMatch(/^\/history\?entity_id=sensor\.a&start_date=/);
   window.removeEventListener("location-changed", listener);
   history.replaceState(null, "", before);
+});
+
+it("offers a header action beside Close and a keyboard time inspector", async () => {
+  const { el, root } = await mount();
+  const action = root.querySelector<HTMLButtonElement>(
+    ".history-top .history-action",
+  );
+  expect(action).not.toBeNull();
+  action!.click();
+  expect(el.controls).toBe(1);
+  expect(action!.nextElementSibling?.hasAttribute("data-close-history")).toBe(
+    true,
+  );
+  expect(text(root, "[data-footer]")).toBe("Daily values");
+  const slider = root.querySelector<HTMLInputElement>(
+    ".history-inspector input",
+  )!;
+  expect(slider).not.toBeNull();
+  slider.value = String(el.ctl.window![0]);
+  slider.dispatchEvent(new Event("input", { bubbles: true }));
+  await el.updateComplete;
+  expect(el.ctl.hover).toBe(el.ctl.window![0]);
+  expect(text(root, ".history-when")).not.toBe("Now");
+  slider.focus();
+  await userEvent.keyboard("{ArrowRight}");
+  await el.updateComplete;
+  expect(el.ctl.hover).toBeGreaterThan(el.ctl.window![0]);
+});
+
+it("isolates the time inspector from a card's generic form styles", async () => {
+  const { root } = await mount();
+  const label = root.querySelector(".history-inspector")!;
+  const input = label.querySelector("input")!;
+  expect(getComputedStyle(label).flexDirection).toBe("row");
+  expect(getComputedStyle(input).paddingLeft).toBe("0px");
+  expect(getComputedStyle(input).borderTopWidth).toBe("0px");
 });

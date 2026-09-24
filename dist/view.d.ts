@@ -28,6 +28,8 @@ export interface HistoryViewOptions<T> {
     legend: (data: T, time: number | undefined) => LegendEntry[];
     /** A legend entry was chosen: open its more-info. */
     select: (entityId: string, event: Event) => void;
+    /** Optional card-specific state legend. */
+    renderLegend?: (data: T, time: number | undefined) => TemplateResult;
     /** Ranges offered; 6 h, 24 h and 7 d by default. */
     ranges?: readonly Range[];
 }
@@ -38,6 +40,10 @@ export interface HistoryViewOptions<T> {
  */
 export declare function historyView<T>(ctl: HistoryController<T>, o: HistoryViewOptions<T>): TemplateResult;
 export interface HistoryDialogOptions<T> extends HistoryViewOptions<T> {
+    /** Optional icon buttons immediately before Close. */
+    headerActions?: TemplateResult;
+    /** Additional explanation or state key after the history. */
+    footer?: TemplateResult;
     /** What the history is of: the card's or appliance's name. */
     subtitle?: string;
     /** Called when the dialog closes (by button, Escape or backdrop). */

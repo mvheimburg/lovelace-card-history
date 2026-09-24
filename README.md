@@ -82,7 +82,7 @@ so cards built with different versions can share a dashboard. It provides:
 | `lineChart`, `lineChartTimeAt` | Two scales, gaps, translucent fill, optional smoothing, dashed setpoint steps, on/off lanes |
 | `timeline`, `timelineTimeAt` | A band per state, hatched while silent; tones and Home Assistant state colours (`stateColor`) chosen by the card |
 | `HistoryController` | Range, loading, failure, pointer and plot width; drops a reply that arrives too late |
-| `historyView`, `historyDialog`, `openHistoryDialog` | Range buttons, chart, readout and a legend that opens more-info; the dialog closes on its backdrop and returns focus to what opened it |
+| `historyView`, `historyDialog`, `openHistoryDialog` | Range buttons, keyboard time inspector, chart, readout and a legend that opens more-info; the dialog closes on its backdrop and returns focus to what opened it |
 | `historyStrings`, `historyFormat`, `historyStyles` | Its English and Bokmål words, locale formatting, and styles driven by `--history-*` variables |
 | `historyMode`, `historyModeOptions`, `openHomeAssistantHistory` | A card's **History view** setting: its own chart, Home Assistant's details, or Home Assistant's History page |
 
@@ -110,3 +110,25 @@ and CI checks that `dist/` matches the source.
 Bump `version` in `package.json` and `package-lock.json`, rebuild, and merge to
 `main`. The release workflow tags `v<version>` and publishes the card bundle
 when that version has no tag yet.
+
+### Card-specific history options (0.2.0)
+
+`lineChart` accepts `maxUnits: 3` for three independently scaled units and
+`domains: { "%": [0, 100] }` for a fixed valve or brightness scale. Defaults
+remain two automatically scaled units. Use `chartUnits(series, leftUnit,
+maxUnits).length` as the last argument to `lineChartTimeAt` when using three
+scales; the existing boolean argument remains supported.
+
+Every shared view includes a keyboard-accessible time slider. Dialogs accept
+`headerActions` for accessible icon buttons beside Close and `footer` for an
+explanation or state key. `renderLegend` lets timeline cards retain their
+state-coloured legend; their callbacks own localization and more-info actions.
+Timeline `stateLabel` and `laneId` callbacks retain localized state bands and
+entity identities. Cards with daily statistics can offer their own numeric
+hour ranges, while the defaults remain 6 h, 24 h and 7 d.
+
+During coordinated development, consumers may vendor the `npm pack` archive
+under `vendor/` and depend on `file:vendor/lovelace-card-history-0.2.0.tgz`.
+This includes the compiled library, requires no sibling checkout, and permits a
+clean install before a new GitHub release is published. A released GitHub tag
+can replace the archive dependency later.

@@ -81,9 +81,35 @@ export const historyStyles = css`
   }
   .history-range:focus-visible,
   .history-item:focus-visible,
+  .history-action:focus-visible,
+  .history-inspector input:focus-visible,
   .history-close:focus-visible {
     outline: 2px solid var(--history-accent-color);
     outline-offset: 2px;
+  }
+  .history-inspector {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    color: var(--history-muted-color);
+    font-size: 12px;
+  }
+  .history-inspector input {
+    flex: 1;
+    width: auto;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    min-width: 120px;
+    min-height: 44px;
+    accent-color: var(--history-accent-color);
+  }
+  .timeline .band-label {
+    fill: var(--history-text-color);
+    font-size: 11px;
+    pointer-events: none;
   }
   .history-plot {
     min-height: 120px;
@@ -285,6 +311,7 @@ export const historyStyles = css`
     font-size: 13px;
     font-weight: 500;
   }
+  .history-action,
   .history-close {
     flex: 0 0 44px;
     width: 44px;
@@ -298,6 +325,7 @@ export const historyStyles = css`
     background: var(--history-pill-color);
     cursor: pointer;
   }
+  .history-action svg,
   .history-close svg {
     width: 22px;
     height: 22px;

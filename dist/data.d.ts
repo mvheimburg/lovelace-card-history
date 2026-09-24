@@ -26,7 +26,8 @@ export type Point = [number, number | undefined];
 export type Mark = [number, string | undefined];
 /** The ranges every history view offers, in hours. */
 export declare const RANGES: readonly [6, 24, 168];
-export type Range = (typeof RANGES)[number];
+/** A range in hours; cards may offer longer periods for daily statistics. */
+export type Range = number;
 /** Palette slots: `.series-0` … `.series-4` in the styles. */
 export declare const PALETTE = 5;
 /** What a line chart draws for one entity. */

@@ -25,6 +25,7 @@ export function historyLocale(hass) {
 }
 const en = {
     history: "History",
+    inspect: "Inspect time",
     showHistory: "Show history",
     closeHistory: "Close history",
     ranges: "History ranges",
@@ -44,6 +45,7 @@ const en = {
 };
 const nb = {
     history: "Historikk",
+    inspect: "Undersøk tidspunkt",
     showHistory: "Vis historikk",
     closeHistory: "Lukk historikk",
     ranges: "Tidsrom",

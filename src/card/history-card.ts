@@ -203,7 +203,7 @@ export class HistoryCard extends LitElement {
           `${cardStrings().entitiesRequired}: ${JSON.stringify(item)}`,
         );
     }
-    const hours = RANGES.includes(config.hours as Range) ? config.hours! : 24;
+    const hours = RANGES.some((hours) => hours === config.hours) ? config.hours! : 24;
     this.config = {
       fill: true,
       smooth: false,

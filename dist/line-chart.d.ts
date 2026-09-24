@@ -14,6 +14,10 @@ export interface ChartOptions {
      * else the first series' unit; a series in another unit gets the right scale.
      */
     leftUnit?: string;
+    /** Opt in to three independent units (two remains the default). */
+    maxUnits?: 2 | 3;
+    /** Fixed bounds by unit, e.g. { "%": [0, 100] } for valve opening. */
+    domains?: Record<string, readonly [number, number]>;
     /** Translucent gradient under each line (default on). */
     fill?: boolean;
     /** Smooth lines through the readings without overshooting them (default off). */
@@ -21,6 +25,8 @@ export interface ChartOptions {
 }
 /** The left and right units of a chart; lanes have no scale. */
 export declare function units(all: Series[], leftUnit?: string): [string, string | undefined];
+/** Units rendered, in axis order. Pass the length to lineChartTimeAt. */
+export declare function chartUnits(all: Series[], leftUnit?: string, maxUnits?: number): string[];
 /**
  * One chart of related readings: the left scale in the main unit, a right-hand
  * scale for a reading in another unit, dashed steps for setpoints and a lane per
@@ -30,5 +36,5 @@ export declare function lineChart(all: Series[], start: number, end: number, hov
 /** The time under a pointer over a line chart. */
 export declare function lineChartTimeAt(event: {
     clientX: number;
-}, element: SVGSVGElement, start: number, end: number, twoScales: boolean): number;
+}, element: SVGSVGElement, start: number, end: number, twoScales: boolean | number): number;
 //# sourceMappingURL=line-chart.d.ts.map

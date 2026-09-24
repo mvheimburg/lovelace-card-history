@@ -38,7 +38,8 @@ export type Mark = [number, string | undefined];
 
 /** The ranges every history view offers, in hours. */
 export const RANGES = [6, 24, 168] as const;
-export type Range = (typeof RANGES)[number];
+/** A range in hours; cards may offer longer periods for daily statistics. */
+export type Range = number;
 /** Palette slots: `.series-0` … `.series-4` in the styles. */
 export const PALETTE = 5;
 

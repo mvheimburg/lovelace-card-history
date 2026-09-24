@@ -87,7 +87,9 @@ it("puts a chosen unit left, smooths without fill on request, and draws on/off l
   expect(
     svg.querySelector('.line[data-entity="sensor.out"]')!.getAttribute("d"),
   ).toContain("C");
-  const lane = svg.querySelector('.history-lane[data-entity="binary_sensor.door"]')!;
+  const lane = svg.querySelector(
+    '.history-lane[data-entity="binary_sensor.door"]',
+  )!;
   expect(lane.querySelectorAll(".lane-track")).toHaveLength(5);
   expect(lane.querySelectorAll(".lane-on")).toHaveLength(2);
   expect(
@@ -160,4 +162,118 @@ it("resolves Home Assistant state colours from the most specific theme variable"
   expect(stateColor(states, "lock.front", "unavailable", "grey")).toBe(
     "var(--state-unavailable-color, grey)",
   );
+});
+
+it("keeps a percentage axis fixed and draws a third independent unit on narrow charts", () => {
+  const host = draw(
+    lineChart(
+      [
+        series("sensor.valve", "%", [25, 75]),
+        series("sensor.room", "°C", [20, 22], { color: 1 }),
+        series("sensor.signal", "dBm", [-80, -60], { color: 2 }),
+      ],
+      START,
+      END,
+      undefined,
+      text,
+      { width: 320, leftUnit: "%", maxUnits: 3, domains: { "%": [0, 100] } },
+    ),
+  );
+  const svg = host.querySelector<SVGSVGElement>("svg")!;
+  expect([...svg.querySelectorAll(".unit")].map((e) => e.textContent)).toEqual([
+    "%",
+    "°C",
+    "dBm",
+  ]);
+  expect(svg.querySelectorAll(".line")).toHaveLength(3);
+  const path = svg
+    .querySelector('[data-entity="sensor.valve"]')!
+    .getAttribute("d")!;
+  // Plot is y=24..196: 25% is y=153, 75% is y=67, independent of observed min/max.
+  expect(path).toContain("44.0,153.0");
+  expect(path).toContain(",67.0");
+  const box = svg.getBoundingClientRect();
+  const right = 320 - 88;
+  expect(
+    lineChartTimeAt(
+      { clientX: box.left + (right / 320) * box.width },
+      svg,
+      START,
+      END,
+      3,
+    ),
+  ).toBe(END);
+});
+
+it("labels timeline bands only when the localized label fits", () => {
+  const host = draw(
+    timeline(
+      [
+        {
+          kind: "water",
+          entityId: "binary_sensor.leak",
+          marks: [
+            [START, "off"],
+            [END - 1000, "on"],
+          ],
+        },
+      ],
+      START,
+      END,
+      undefined,
+      {
+        ...text,
+        lane: () => "Water",
+        tone: () => "ok",
+        stateLabel: (_lane, state) => (state === "off" ? "Dry" : "Wet"),
+        laneId: (lane) => lane.entityId,
+      },
+    ),
+  );
+  expect(host.querySelector('[data-lane="binary_sensor.leak"]')).not.toBeNull();
+  expect(
+    [...host.querySelectorAll(".band-label")].map((e) => e.textContent),
+  ).toEqual(["Dry"]);
+  expect(host.querySelectorAll(".band title")[1]?.textContent).toContain("Wet");
+});
+
+it("shows a lone measurement between gaps as a visible stroke", () => {
+  const host = draw(
+    lineChart(
+      [series("sensor.out", "°C", [undefined, 20, undefined])],
+      START,
+      END,
+      undefined,
+      text,
+    ),
+  );
+  const path = host.querySelector<SVGPathElement>(".line")!;
+  expect(path.getTotalLength()).toBeGreaterThan(0);
+});
+
+it("keeps long clock labels apart on a narrow three-unit chart", () => {
+  const host = draw(
+    lineChart(
+      [
+        series("sensor.out", "°C", [20, 21]),
+        series("sensor.battery", "%", [80, 81]),
+        series("sensor.signal", "dBm", [-70, -60]),
+      ],
+      START,
+      END,
+      undefined,
+      { ...text, time: () => "12:00 AM" },
+      { width: 320, maxUnits: 3 },
+    ),
+  );
+  host.style.font = "12px sans-serif";
+  const labels = [
+    ...host.querySelectorAll<SVGTextElement>('text.axis[y="214"]'),
+  ];
+  expect(labels.length).toBeGreaterThan(1);
+  for (let i = 1; i < labels.length; i++) {
+    const before = labels[i - 1].getBBox(),
+      after = labels[i].getBBox();
+    expect(after.x - before.x - before.width).toBeGreaterThan(4);
+  }
 });

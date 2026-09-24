@@ -10,6 +10,10 @@ export interface TimelineText {
      * (`undefined` state) is always the hatched `gap`.
      */
     tone: (lane: Lane, state: string) => string;
+    /** Optional state labels, shown within a band when they fit. */
+    stateLabel?: (lane: Lane, state: string | undefined) => string;
+    /** Stable lane identity when multiple entities have the same kind. */
+    laneId?: (lane: Lane) => string;
     /** A band's color when it should not come from its tone class, e.g. HA state colors. */
     color?: (lane: Lane, state: string) => string | undefined;
 }

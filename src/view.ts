@@ -40,6 +40,8 @@ export interface HistoryViewOptions<T> {
   legend: (data: T, time: number | undefined) => LegendEntry[];
   /** A legend entry was chosen: open its more-info. */
   select: (entityId: string, event: Event) => void;
+  /** Optional card-specific state legend. */
+  renderLegend?: (data: T, time: number | undefined) => TemplateResult;
   /** Ranges offered; 6 h, 24 h and 7 d by default. */
   ranges?: readonly Range[];
 }
@@ -106,28 +108,52 @@ export function historyView<T>(
               : o.chart(data, range, hover, Math.max(280, ctl.width))
       }
     </div>
+    ${
+      data !== undefined && range && !error && !o.isEmpty(data)
+        ? html`<label class="history-inspector"
+            >${o.strings.inspect}
+            <input
+              type="range"
+              min=${range[0]}
+              max=${range[1]}
+              step=${(range[1] - range[0]) / 200}
+              .value=${String(hover ?? range[1])}
+              aria-valuetext=${o.format.moment(hover ?? range[1])}
+              @input=${(e: Event) => ctl.setHover(Number((e.target as HTMLInputElement).value))}
+            />
+          </label>`
+        : nothing
+    }
     <p class="history-when" aria-live="polite">
       ${hover === undefined ? o.strings.now : long ? o.format.moment(hover) : o.format.time(hover)}
     </p>
     <div class="history-legend">
-      ${legend.map(
-        (entry) =>
-          html`<button
-            class=${`history-item series-${entry.color}${entry.kind ? ` kind-${entry.kind}` : ""}`}
-            type="button"
-            data-series=${entry.entityId}
-            title=${entry.title ?? nothing}
-            @click=${(e: Event) => o.select(entry.entityId, e)}
-          >
-            <span class="swatch" aria-hidden="true"></span>
-            <span class="label">${entry.name}</span>
-            <strong>${entry.value}</strong>
-          </button>`,
-      )}
+      ${
+        data !== undefined && o.renderLegend
+          ? o.renderLegend(data, hover)
+          : legend.map(
+              (entry) =>
+                html`<button
+                  class=${`history-item series-${entry.color}${entry.kind ? ` kind-${entry.kind}` : ""}`}
+                  type="button"
+                  data-series=${entry.entityId}
+                  title=${entry.title ?? nothing}
+                  @click=${(e: Event) => o.select(entry.entityId, e)}
+                >
+                  <span class="swatch" aria-hidden="true"></span>
+                  <span class="label">${entry.name}</span>
+                  <strong>${entry.value}</strong>
+                </button>`,
+            )
+      }
     </div>`;
 }
 
 export interface HistoryDialogOptions<T> extends HistoryViewOptions<T> {
+  /** Optional icon buttons immediately before Close. */
+  headerActions?: TemplateResult;
+  /** Additional explanation or state key after the history. */
+  footer?: TemplateResult;
   /** What the history is of: the card's or appliance's name. */
   subtitle?: string;
   /** Called when the dialog closes (by button, Escape or backdrop). */
@@ -178,6 +204,7 @@ export function historyDialog<T>(
       <h2 class="history-title" id="history-title">
         ${o.strings.history}${o.subtitle ? html` <span class="history-subtitle">${o.subtitle}</span>` : nothing}
       </h2>
+      ${o.headerActions ?? nothing}
       <button
         class="history-close"
         type="button"
@@ -199,6 +226,7 @@ export function historyDialog<T>(
         o.select(id, e);
       },
     })}
+    ${o.footer ?? nothing}
   </dialog>`;
 }
 

@@ -46,7 +46,7 @@ export function timeline(lanes, start, end, hover, text, W = 600) {
     ${ticks.map((t) => svg `<line class="grid" x1=${x(t)} x2=${x(t)} y1=${TOP} y2=${bottom}></line><text class="axis" x=${x(t)} y=${bottom + 17} text-anchor="middle">${text.time(t, step >= 24)}</text>`)}
     ${lanes.map((lane, i) => {
         const y = top(i) + LABEL;
-        return svg `<g class="band-lane" data-lane=${lane.kind}>
+        return svg `<g class="band-lane" data-lane=${text.laneId?.(lane) ?? lane.kind}>
         <text class="lane-label" x=${SIDE} y=${top(i) + 13}>${text.lane(lane)}</text>
         <rect class="track" x=${SIDE} y=${y} width=${RIGHT - SIDE} height=${BAND} rx="4"></rect>
         ${lane.marks.map(([t, state], j) => {
@@ -55,7 +55,8 @@ export function timeline(lanes, start, end, hover, text, W = 600) {
                 return nothing;
             const tone = state === undefined ? "gap" : text.tone(lane, state);
             const color = state === undefined ? undefined : text.color?.(lane, state);
-            return svg `<rect class=${`band b-${tone}`} data-state=${state ?? ""} style=${color ? `--band: ${color}` : ""} x=${from} y=${y} width=${to - from} height=${BAND}></rect>`;
+            const label = text.stateLabel?.(lane, state);
+            return svg `<rect class=${`band b-${tone}`} data-state=${state ?? ""} style=${color ? `--band: ${color}` : ""} x=${from} y=${y} width=${to - from} height=${BAND}>${label ? svg `<title>${text.lane(lane)}: ${label}</title>` : nothing}</rect>${label && to - from > label.length * 7 + 16 ? svg `<text class=${`band-label b-${tone}`} x=${from + 8} y=${y + 16}>${label}</text>` : nothing}`;
         })}
       </g>`;
     })}

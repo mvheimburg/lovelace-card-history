@@ -32,6 +32,7 @@ export function historyLocale(hass?: LanguageSource): string {
 
 const en = {
   history: "History",
+  inspect: "Inspect time",
   showHistory: "Show history",
   closeHistory: "Close history",
   ranges: "History ranges",
@@ -52,6 +53,7 @@ const en = {
 export type HistoryStrings = typeof en;
 const nb: HistoryStrings = {
   history: "Historikk",
+  inspect: "Undersøk tidspunkt",
   showHistory: "Vis historikk",
   closeHistory: "Lukk historikk",
   ranges: "Tidsrom",

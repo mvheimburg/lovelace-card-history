@@ -15,6 +15,7 @@ export declare function historyLanguage(hass?: LanguageSource): "en" | "nb";
 export declare function historyLocale(hass?: LanguageSource): string;
 declare const en: {
     history: string;
+    inspect: string;
     showHistory: string;
     closeHistory: string;
     ranges: string;
